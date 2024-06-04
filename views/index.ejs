@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+    <form action="/api/save" method="post">
+      <button type="submit">Save to DB</button>
+    </form>
+
+    <h1>Channels</h1>
+    <ul>
+      <% channels.forEach(channel => { %>
+          <li><%= channel.channelTitle %>
+          <form action="/channel/delete" method="post">
+            <input type="hidden" name="channelId" value="<%= channel._id %>">
+            <button type="submit">Delete</button>
+          </form>
+      </li>
+      <% }); %>
+  </ul>
+  <div>
+    <h2>Add new Channel by id</h2>
+    <form action="/channel/add" method="post">
+      <input type="text" name="handle" id="handle" placeholder="@handle">
+      <button type="submit">Add new Channel</button>
+    </form>
+    
+  </div>
+    <h1>Playlists</h1>
+    <% if (all_playlists.length > 0) { %>
+      <table>
+          <thead>
+              <tr>
+                  <th></th>
+                  <th>Title</th>
+                  <th>Channel</th>
+                  <th>Actions</th>
+              </tr>
+          </thead>
+          <tbody>
+              <% all_playlists.forEach(playlist => { %>
+              <tr>
+                  <td><img src=<%= playlist.thumbnail %> alt=<%= playlist.title %> /></td>
+                  <td><a href=<%= playlist.link %> target="_blank" rel="noopener noreferrer"><%= playlist.title %></a></td>
+                  <td><%= playlist.channelTitle %></td>
+                  <td>
+                      <form action="/api/delete/" method="post">
+                          <input type="hidden" name="playlistId" value="<%= playlist._id %>">
+                          <button type="submit">Delete</button>
+                      </form>
+                  </td>
+              </tr>
+              <% }); %>
+          </tbody>
+      </table>
+      <% } else { %>
+      <p>No playlists available.</p>
+      <% } %>
+
+  </body>
+</html>
