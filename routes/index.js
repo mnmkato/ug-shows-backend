@@ -12,10 +12,18 @@ const maxResults = 100;
 router.get('/', async function(req, res, next) {
     const channels = await Channel.find().sort({created_at: -1}).exec();
     const all_playlists = await Playlist.find({deleted:false}).sort({created_at: -1}).exec();
+    
+    const totalPlaylists = await Playlist.countDocuments({});
+    const deletedPlaylists = await Playlist.countDocuments({ deleted: true });
+    const nonDeletedPlaylists = await Playlist.countDocuments({ deleted: false });
+
     res.render('index', { 
         title: 'UG Shows server',
         all_playlists: all_playlists,
-        channels: channels });
+        channels: channels,
+        totalPlaylists:totalPlaylists,
+        deletedPlaylists: deletedPlaylists,
+        nonDeletedPlaylists:nonDeletedPlaylists });
 });
 
   router.get('/api/playlists', async (req, res) => {

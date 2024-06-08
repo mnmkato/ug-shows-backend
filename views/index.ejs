@@ -31,10 +31,16 @@
     
   </div>
     <h1>Playlists</h1>
+    <div class="playlist-header">
+      <div>Active (<%= nonDeletedPlaylists %>)</div>
+      <div>Deleted (<%= deletedPlaylists  %>)</div>
+      <div>All (<%= totalPlaylists  %>)</div>
+    </div>
     <% if (all_playlists.length > 0) { %>
       <table>
           <thead>
               <tr>
+                  <th></th>
                   <th></th>
                   <th>Title</th>
                   <th>Channel</th>
@@ -44,6 +50,7 @@
           <tbody>
               <% all_playlists.forEach(playlist => { %>
               <tr>
+                  <td><%= all_playlists.indexOf(playlist)+1 %></td>
                   <td><img src=<%= playlist.thumbnail %> alt=<%= playlist.title %> /></td>
                   <td><a href=<%= playlist.link %> target="_blank" rel="noopener noreferrer"><%= playlist.title %></a></td>
                   <td><%= playlist.channelTitle %></td>

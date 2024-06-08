@@ -6,9 +6,18 @@ body {
 a {
   color: #00B7FF;
 }
-
+.playlist-header{
+  display:flex
+}
+.playlist-header div{
+  margin-right: 1rem;
+  display: flex
+}
 table, th, td {
   border: 1px solid;
+}
+td {
+  padding:8px
 }
 td img{
   width:5rem;
