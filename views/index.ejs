@@ -7,21 +7,8 @@
   <body>
     <h1><%= title %></h1>
     <p>Welcome to <%= title %></p>
-    <form action="/api/save" method="post">
-      <button type="submit">Save to DB</button>
-    </form>
 
     <h1>Channels</h1>
-    <ul>
-      <% channels.forEach(channel => { %>
-          <li><%= channel.channelTitle %>
-          <form action="/channel/delete" method="post">
-            <input type="hidden" name="channelId" value="<%= channel._id %>">
-            <button type="submit">Delete</button>
-          </form>
-      </li>
-      <% }); %>
-  </ul>
   <div>
     <h2>Add new Channel by id</h2>
     <form action="/channel/add" method="post">
@@ -30,11 +17,25 @@
     </form>
     
   </div>
+  <p>Active channels <%= channels.length %></p>
+  <ul class="channel-list">
+    <% channels.forEach(channel => { %>
+        <li><%= channel.channelTitle %>
+        <form action="/channel/delete" method="post">
+          <input type="hidden" name="channelId" value="<%= channel._id %>">
+          <button type="submit">Delete</button>
+        </form>
+    </li>
+    <% }); %>
+</ul>
+<form action="/api/save" method="post">
+  <button type="submit">Save channel playlists to DB</button>
+</form>
     <h1>Playlists</h1>
     <div class="playlist-header">
-      <div>Active (<%= nonDeletedPlaylists %>)</div>
-      <div>Deleted (<%= deletedPlaylists  %>)</div>
-      <div>All (<%= totalPlaylists  %>)</div>
+      <div><a href="/?filter=active">Active (<%= nonDeletedPlaylists %>)</a></div>
+      <div><a href="/?filter=deleted">Deleted (<%= deletedPlaylists  %>)</a></div>
+      <div><a href="/?filter=all">All (<%= totalPlaylists  %>)</a></div>
     </div>
     <% if (all_playlists.length > 0) { %>
       <table>
@@ -44,6 +45,7 @@
                   <th></th>
                   <th>Title</th>
                   <th>Channel</th>
+                  <th>Deleted</th>
                   <th>Actions</th>
               </tr>
           </thead>
@@ -54,12 +56,21 @@
                   <td><img src=<%= playlist.thumbnail %> alt=<%= playlist.title %> /></td>
                   <td><a href=<%= playlist.link %> target="_blank" rel="noopener noreferrer"><%= playlist.title %></a></td>
                   <td><%= playlist.channelTitle %></td>
+                  <td><%= playlist.deleted %></td>
                   <td>
+                    <% if (playlist.deleted === false) { %>
                       <form action="/api/delete/" method="post">
-                          <input type="hidden" name="playlistId" value="<%= playlist._id %>">
-                          <button type="submit">Delete</button>
+                        <input type="hidden" name="playlistId" value="<%= playlist._id %>">
+                        <button type="submit">Delete</button>
                       </form>
+                    <% } else { %>
+                      <form action="/api/restore/" method="post">
+                        <input type="hidden" name="playlistId" value="<%= playlist._id %>">
+                        <button type="submit">Restore</button>
+                      </form>
+                    <% } %>
                   </td>
+                  
               </tr>
               <% }); %>
           </tbody>

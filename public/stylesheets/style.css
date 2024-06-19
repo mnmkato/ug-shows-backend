@@ -6,6 +6,24 @@ body {
 a {
   color: #00B7FF;
 }
+.channel-list{
+  display: flex;
+  flex-wrap: wrap;
+  list-style-type: none;
+}
+.channel-list li {
+  background-color: black;
+  color: #00B7FF;
+  margin: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
 .playlist-header{
   display:flex
 }
