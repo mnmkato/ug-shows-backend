@@ -2,11 +2,16 @@ const mongoose = require('mongoose');
 
 // Define playlist schema
 const playlistSchema = new mongoose.Schema({
-    playlistId:{ type: String, required: true },
+    playlistId: { type: String, required: true },
     link: String,
-    thumbnail: String,
+    thumbnail_default: String,
+    thumbnail_medium: String,
+    thumbnail_high: String,
+    thumbnail_standard: String,
+    thumbnail_maxres: String,
     title: String,
     channelTitle: String,
+    lastPublishedAt: Date,
     deleted: {
         type: Boolean,
         default: false
