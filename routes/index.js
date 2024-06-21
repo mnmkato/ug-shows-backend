@@ -48,12 +48,39 @@ router.get('/', async function(req, res, next) {
       const all_playlists = await Playlist.find({deleted:false}).sort({ lastPublishedAt: -1 }).exec();
       res.json(all_playlists);
   })
+
   router.post('/api/delete/',async (req, res) => {
-      //await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
-      await Playlist.deleteMany({});
+      await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
+      //await Playlist.deleteMany({deleted: false});
+      //await Playlist.deleteMany({});
+       
       res.redirect('/')
   })
-  router.post('/api/restore/',async (req, res) => {
+
+  router.post('/api/delete_or_restore_many', async (req, res) => {
+    const playlistIds = Array.isArray(req.body.playlistIds) ? req.body.playlistIds : [req.body.playlistIds]; // Ensure playlistIds is an array
+    const action = req.body.action;
+  
+    try {
+      if (action === 'delete') {
+        // Update playlists' deleted field to true
+        const result = await Playlist.updateMany({ _id: { $in: playlistIds } }, { $set: { deleted: true } });
+        console.log(`${result.nModified} playlists marked as deleted.`);
+      } else if (action === 'restore') {
+        // Update playlists' deleted field to false
+        const result = await Playlist.updateMany({ _id: { $in: playlistIds } }, { $set: { deleted: false } });
+        console.log(`${result.nModified} playlists restored.`);
+      }
+      res.redirect('/'); // Redirect to homepage or wherever after updating
+    } catch (err) {
+      console.error('Error updating playlists:', err);
+      res.status(500).send('Error updating playlists');
+    }
+  });
+  
+    
+router.post('/api/restore/',async (req, res) => {
+  console.log(req.body.playlistId)
     await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: false });
     res.redirect('/')
 })
@@ -168,8 +195,6 @@ router.post('/api/save', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-
 
   router.post('/channel/delete', async (req, res) => {
     await Channel.findByIdAndDelete(req.body.channelId);

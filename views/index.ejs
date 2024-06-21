@@ -31,55 +31,46 @@
 <form action="/api/save" method="post">
   <button type="submit">Save channel playlists to DB</button>
 </form>
-    <h1>Playlists</h1>
-    <div class="playlist-header">
-      <div><a href="/?filter=active">Active (<%= nonDeletedPlaylists %>)</a></div>
-      <div><a href="/?filter=deleted">Deleted (<%= deletedPlaylists  %>)</a></div>
-      <div><a href="/?filter=all">All (<%= totalPlaylists  %>)</a></div>
-    </div>
-    <% if (all_playlists.length > 0) { %>
-      <table>
-          <thead>
-              <tr>
-                  <th></th>
-                  <th></th>
-                  <th>Title</th>
-                  <th>Channel</th>
-                  <th>lastPublishedAt</th>
-                  <th>Deleted</th>
-                  <th>Actions</th>
-              </tr>
-          </thead>
-          <tbody>
-              <% all_playlists.forEach(playlist => { %>
-              <tr>
-                  <td><%= all_playlists.indexOf(playlist)+1 %></td>
-                  <td><img src=<%= playlist.thumbnail_default %> alt=<%= playlist.title %> /></td>
-                  <td><a href=<%= playlist.link %> target="_blank" rel="noopener noreferrer"><%= playlist.title %></a></td>
-                  <td><%= playlist.channelTitle %></td>
-                  <td><%= playlist.lastPublishedAt %></td>
-                  <td><%= playlist.deleted %></td>
-                  <td>
-                    <% if (playlist.deleted === false) { %>
-                      <form action="/api/delete/" method="post">
-                        <input type="hidden" name="playlistId" value="<%= playlist._id %>">
-                        <button type="submit">Delete</button>
-                      </form>
-                    <% } else { %>
-                      <form action="/api/restore/" method="post">
-                        <input type="hidden" name="playlistId" value="<%= playlist._id %>">
-                        <button type="submit">Restore</button>
-                      </form>
-                    <% } %>
-                  </td>
-                  
-              </tr>
-              <% }); %>
-          </tbody>
-      </table>
-      <% } else { %>
-      <p>No playlists available.</p>
-      <% } %>
+
+<h1>Playlists</h1>
+<div class="playlist-header">
+  <div><a href="/?filter=active">Active (<%= nonDeletedPlaylists %>)</a></div>
+  <div><a href="/?filter=deleted">Deleted (<%= deletedPlaylists  %>)</a></div>
+  <div><a href="/?filter=all">All (<%= totalPlaylists  %>)</a></div>
+</div>
+
+<% if (all_playlists.length > 0) { %>
+  <form id="playlistForm" action="/api/delete_or_restore_many" method="post">
+    <table>
+      <thead>
+        <tr>
+          <th></th> <!-- New column for checkboxes -->
+          <th></th>
+          <th>Title</th>
+          <th>Channel</th>
+          <th>Last Published At</th>
+          <th>Deleted</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% all_playlists.forEach(playlist => { %>
+          <tr>
+            <td><input type="checkbox" name="playlistIds" value="<%= playlist._id %>"></td> <!-- Checkbox column -->
+            <td><img src="<%= playlist.thumbnail_default %>" alt="<%= playlist.title %>"></td>
+            <td><a href="<%= playlist.link %>" target="_blank" rel="noopener noreferrer"><%= playlist.title %></a></td>
+            <td><%= playlist.channelTitle %></td>
+            <td><%= playlist.lastPublishedAt %></td>
+            <td><%= playlist.deleted %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    <button type="submit" name="action" value="delete">Delete Selected</button>
+    <button type="submit" name="action" value="restore">Restore Selected</button>
+  </form>
+<% } else { %>
+  <p>No playlists available.</p>
+<% } %>
 
   </body>
 </html>
