@@ -126,7 +126,6 @@ router.post('/api/save', async (req, res) => {
             return {
                 playlistId: item.id,
                 link: `https://www.youtube.com/playlist?list=${item.id}`,
-                thumbnail: getThumbnailUrl(item.snippet.thumbnails, 'medium'),
                 thumbnail_default: getThumbnailUrl(item.snippet.thumbnails, 'default'),
                 thumbnail_medium: getThumbnailUrl(item.snippet.thumbnails, 'medium'),
                 thumbnail_high: getThumbnailUrl(item.snippet.thumbnails, 'high'),
