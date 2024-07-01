@@ -11,11 +11,9 @@ const playlistSchema = new mongoose.Schema({
     thumbnail_maxres: String,
     title: String,
     channelTitle: String,
-    lastPublishedAt: Date,
-    deleted: {
-        type: Boolean,
-        default: false
-    }
+    lastPublishedAt: Date, 
+    averageViews: { type: Number, default: 0 }, 
+    deleted: {type: Boolean, default: false}
 });
 
 // Define playlist model

@@ -13,6 +13,10 @@ router.get('/', async (req, res) => {
     const all_playlists = await Playlist.find({deleted:false}).sort({ lastPublishedAt: -1 }).exec();
     res.json(all_playlists);
   })
+ router.get('/popular', async (req, res) => {
+    const all_playlists = await Playlist.find({deleted:false}).sort({ averageViews: -1 }).exec();
+    res.json(all_playlists);
+})
 
 //delete or restore many playlists
 router.post('/delete_or_restore_many', async (req, res) => {
@@ -37,33 +41,35 @@ router.post('/delete_or_restore_many', async (req, res) => {
   });
   
 // delete single playlist
-router.post('/delete',async (req, res) => {
-    await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
+router.get('/delete',async (req, res) => {
+    //await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
     //await Playlist.deleteMany({deleted: false});
-    //await Playlist.deleteMany({});
+    await Playlist.deleteMany({});
        
     res.redirect('/')
 })
 
 // restore single playlist
 router.post('/restore',async (req, res) => {
-  console.log(req.body.playlistId)
     await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: false });
     res.redirect('/')
 })
 
+
 async function getLastPublishedAt(playlistId, playlist_publish_date) {
   let allItems = [];
   let pageToken = '';
+  let totalViews = 0;
 
   const BASE_URL = 'https://youtube.googleapis.com/youtube/v3/playlistItems';
-  const PART = 'snippet';
+  const VIDEO_URL = 'https://www.googleapis.com/youtube/v3/videos';
+  const PART = 'snippet,contentDetails';
 
   async function fetchPlaylistItems(pageToken) {
     const params = {
       part: PART,
       playlistId: playlistId,
-      maxResults: maxResults,
+      maxResults: 50,
       key: apiKey,
       pageToken: pageToken
     };
@@ -77,6 +83,34 @@ async function getLastPublishedAt(playlistId, playlist_publish_date) {
     }
   }
 
+  async function fetchVideoDetails(videoIds) {
+    const batchSize = 50; // Maximum number of video IDs per request
+    let videoDetails = [];
+  
+    try {
+      for (let i = 0; i < videoIds.length; i += batchSize) {
+        const batchIds = videoIds.slice(i, i + batchSize);
+        const params = {
+          part: 'statistics',
+          id: batchIds.join(','),
+          key: apiKey
+        };
+        
+        const response = await axios.get(VIDEO_URL, { params });
+        videoDetails = videoDetails.concat(response.data.items);
+      }
+  
+      //console.log("Video details fetched successfully");
+      return {
+        items: videoDetails
+      };
+    } catch (error) {
+      console.error('Error fetching video details:', error.message);
+      throw error;
+    }
+  }
+  
+
   try {
     let responseData = await fetchPlaylistItems(pageToken);
     allItems = allItems.concat(responseData.items);
@@ -89,11 +123,24 @@ async function getLastPublishedAt(playlistId, playlist_publish_date) {
     }
 
     if (allItems.length === 0) {
-      return playlist_publish_date
+      return {
+        lastPublishedAt: playlist_publish_date,
+        averageViews: 0
+      };
     }
 
+    const videoIds = allItems.map(item => item.contentDetails.videoId);
+    
+    const videoDetails = await fetchVideoDetails(videoIds);
+    totalViews = videoDetails.items.reduce((acc, item) => acc + parseInt(item.statistics.viewCount, 10), 0);
+
     const lastItem = allItems[allItems.length - 1];
-    return lastItem.snippet.publishedAt;
+    const averageViews = Math.floor(totalViews / allItems.length) 
+
+    return {
+      lastPublishedAt: lastItem.snippet.publishedAt,
+      averageViews: averageViews
+    };
   } catch (error) {
     throw new Error('Error fetching last published date: ' + error.message);
   }
@@ -103,62 +150,60 @@ const fetchAndSavePlaylists = async () => {
   try {
     const channels = await Channel.find().sort({ created_at: -1 }).exec();
     const allPlaylists = await Promise.all(channels.map(async (channel) => {
-        const response = await axios.get(`https://youtube.googleapis.com/youtube/v3/playlists`, {
-            params: {
-                part: 'snippet',
-                channelId: channel.channelId,
-                maxResults: maxResults,
-                key: apiKey
-            }
-        });
-
-        const data = await Promise.all(response.data.items.map(async (item) => {
-          const lastPublishedAt = await getLastPublishedAt(item.id, item.snippet.publishedAt);
-          
-          // Define a function to safely get thumbnail URLs
-          const getThumbnailUrl = (thumbnails, size) => thumbnails[size] ? thumbnails[size].url : null;
-      
-          return {
-              playlistId: item.id,
-              link: `https://www.youtube.com/playlist?list=${item.id}`,
-              thumbnail_default: getThumbnailUrl(item.snippet.thumbnails, 'default'),
-              thumbnail_medium: getThumbnailUrl(item.snippet.thumbnails, 'medium'),
-              thumbnail_high: getThumbnailUrl(item.snippet.thumbnails, 'high'),
-              thumbnail_standard: getThumbnailUrl(item.snippet.thumbnails, 'standard'),
-              thumbnail_maxres: getThumbnailUrl(item.snippet.thumbnails, 'maxres'),
-              title: item.snippet.title,
-              channelTitle: item.snippet.channelTitle,
-              lastPublishedAt: lastPublishedAt, // Add the last published date
-              deleted: false
-          };
-      }));
-      
-  
-        // Fetch all playlists from the database that match the playlist IDs in the data
-        const existingPlaylists = await Playlist.find({ 
-            playlistId: { $in: data.map(item => item.playlistId) }
-        });
-
-        // Filter out playlists that are marked as deleted
-        const filteredData = data.filter(item => 
-            !existingPlaylists.some(playlist => playlist.playlistId === item.playlistId && playlist.deleted)
-        );
-
-        // Filter out playlists that are already in the database and not deleted
-        const playlistsToInsert = filteredData.filter(item => 
-            !existingPlaylists.some(playlist => playlist.playlistId === item.playlistId)
-        );
-
-        //console.log('Playlists to insert:', playlistsToInsert);
-
-        // Insert only the playlists that are not already in the database
-        if (playlistsToInsert.length > 0) {
-            await Playlist.insertMany(playlistsToInsert);
+      const response = await axios.get(`https://youtube.googleapis.com/youtube/v3/playlists`, {
+        params: {
+          part: 'snippet',
+          channelId: channel.channelId,
+          maxResults: 50,
+          key: apiKey
         }
+      });
+
+      const data = await Promise.all(response.data.items.map(async (item) => {
+        const { lastPublishedAt, averageViews } = await getLastPublishedAt(item.id, item.snippet.publishedAt);
+
+        // Define a function to safely get thumbnail URLs
+        const getThumbnailUrl = (thumbnails, size) => thumbnails[size] ? thumbnails[size].url : null;
+
+        return {
+          playlistId: item.id,
+          link: `https://www.youtube.com/playlist?list=${item.id}`,
+          thumbnail_default: getThumbnailUrl(item.snippet.thumbnails, 'default'),
+          thumbnail_medium: getThumbnailUrl(item.snippet.thumbnails, 'medium'),
+          thumbnail_high: getThumbnailUrl(item.snippet.thumbnails, 'high'),
+          thumbnail_standard: getThumbnailUrl(item.snippet.thumbnails, 'standard'),
+          thumbnail_maxres: getThumbnailUrl(item.snippet.thumbnails, 'maxres'),
+          title: item.snippet.title,
+          channelTitle: item.snippet.channelTitle,
+          lastPublishedAt: lastPublishedAt,
+          averageViews: averageViews, 
+          deleted: false
+        };
+      }));
+
+      // Fetch all playlists from the database that match the playlist IDs in the data
+      const existingPlaylists = await Playlist.find({ 
+        playlistId: { $in: data.map(item => item.playlistId) }
+      });
+
+      // Filter out playlists that are marked as deleted
+      const filteredData = data.filter(item => 
+        !existingPlaylists.some(playlist => playlist.playlistId === item.playlistId && playlist.deleted)
+      );
+
+      // Filter out playlists that are already in the database and not deleted
+      const playlistsToInsert = filteredData.filter(item => 
+        !existingPlaylists.some(playlist => playlist.playlistId === item.playlistId)
+      );
+
+      // Insert only the playlists that are not already in the database
+      if (playlistsToInsert.length > 0) {
+        await Playlist.insertMany(playlistsToInsert);
+      }
     }));
 
   } catch (error) {
-      console.error('There was a problem:', error);
+    console.error('There was a problem:', error);
   }
 };
 
