@@ -28,7 +28,7 @@
     </li>
     <% }); %>
 </ul>
-<form action="/api/save" method="post">
+<form action="/playlist/save" method="post">
   <button type="submit">Save channel playlists to DB</button>
 </form>
 
@@ -40,7 +40,7 @@
 </div>
 
 <% if (all_playlists.length > 0) { %>
-  <form id="playlistForm" action="/api/delete_or_restore_many" method="post">
+  <form id="playlistForm" action="/playlist/delete_or_restore_many" method="post">
     <table>
       <thead>
         <tr>
