@@ -6,15 +6,59 @@ const Playlist = require('../models/Playlist')
 const Channel = require('../models/channel')
 
 const apiKey = process.env.YOUTUBE_API_KEY;
-const maxResults = 100;
 
 // Get all playlists
 router.get('/', async (req, res) => {
     const all_playlists = await Playlist.find({deleted:false}).sort({ lastPublishedAt: -1 }).exec();
     res.json(all_playlists);
   })
+// Get recent playlists
+router.get('/recent', async (req, res) => {
+    const all_playlists = await Playlist.find({deleted:false}).sort({ lastPublishedAt: -1 }).limit(10).exec();
+    res.json(all_playlists);
+  })
+  // Get popular playlists
  router.get('/popular', async (req, res) => {
-    const all_playlists = await Playlist.find({deleted:false}).sort({ averageViews: -1 }).exec();
+    const all_playlists = await Playlist.find({deleted:false}).sort({ averageViews: -1 }).limit(10).exec();
+    res.json(all_playlists);
+})
+// Get trending playlists
+ router.get('/trending', async (req, res) => {
+    const all_playlists = await Playlist.aggregate([
+      {
+          $match: {
+              deleted: false // Only consider playlists that are not deleted
+          }
+      },
+      {
+          $addFields: {
+              // Calculate the age of the playlist in days (you can adjust the weighting here)
+              ageScore: {
+                  $divide: [
+                      {
+                          $subtract: [ new Date(), '$lastPublishedAt' ]
+                      },
+                      86400000 // milliseconds in a day
+                  ]
+              },
+              popularityScore: '$averageViews' // You can adjust this based on your scoring metric
+          }
+      },
+      {
+          $addFields: {
+              // Combine scores as per your requirement (e.g., linear combination or weighted sum)
+              trendingScore: {
+                  $divide: ['$popularityScore', '$ageScore'  ]// Adjust weights as needed
+              }
+          }
+      },
+      {
+          $sort: { trendingScore: -1 } // Sort playlists by trending score descending
+      },
+      {
+          $limit: 10 // Limit the result to the first 10 items
+      }
+  ]);
     res.json(all_playlists);
 })
 
@@ -41,11 +85,10 @@ router.post('/delete_or_restore_many', async (req, res) => {
   });
   
 // delete single playlist
-router.get('/delete',async (req, res) => {
-    //await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
+router.post('/delete',async (req, res) => {
+    await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
     //await Playlist.deleteMany({deleted: false});
-    await Playlist.deleteMany({});
-       
+    //await Playlist.deleteMany({});   
     res.redirect('/')
 })
 
@@ -208,10 +251,10 @@ const fetchAndSavePlaylists = async () => {
 };
 
 // Initial call to fetch and save playlists
-fetchAndSavePlaylists();
+//fetchAndSavePlaylists();
 
-// Interval to fetch and save playlists every 4 hrs
-const interval = 4 * 60 * 60 * 1000; // 4 hrs in milliseconds
+// Interval to fetch and save playlists every 8 hrs
+const interval = 8 * 60 * 60 * 1000; // 8 hrs in milliseconds
 setInterval(fetchAndSavePlaylists, interval);
 
 // Route handling the initial save
