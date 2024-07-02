@@ -85,10 +85,10 @@ router.post('/delete_or_restore_many', async (req, res) => {
   });
   
 // delete single playlist
-router.post('/delete',async (req, res) => {
-    await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
+router.get('/delete',async (req, res) => {
+    //await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
     //await Playlist.deleteMany({deleted: false});
-    //await Playlist.deleteMany({});   
+    await Playlist.deleteMany({});   
     res.redirect('/')
 })
 
@@ -97,7 +97,6 @@ router.post('/restore',async (req, res) => {
     await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: false });
     res.redirect('/')
 })
-
 
 async function getLastPublishedAt(playlistId, playlist_publish_date) {
   let allItems = [];
@@ -205,8 +204,13 @@ const fetchAndSavePlaylists = async () => {
       const data = await Promise.all(response.data.items.map(async (item) => {
         const { lastPublishedAt, averageViews } = await getLastPublishedAt(item.id, item.snippet.publishedAt);
 
-        // Define a function to safely get thumbnail URLs
-        const getThumbnailUrl = (thumbnails, size) => thumbnails[size] ? thumbnails[size].url : null;
+        // function to safely get thumbnail URLs
+        const getThumbnailUrl = (thumbnails, size) => {
+          if (thumbnails[size]) {
+            return thumbnails[size].url.replace('/vi/', '/vi_webp/').replace('.jpg', '.webp');
+          }
+          return null;
+        };
 
         return {
           playlistId: item.id,
