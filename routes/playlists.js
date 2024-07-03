@@ -56,7 +56,7 @@ router.get('/recent', async (req, res) => {
           $sort: { trendingScore: -1 } // Sort playlists by trending score descending
       },
       {
-          $limit: 10 // Limit the result to the first 10 items
+          $limit: 6 // Limit the result to the first 6 items
       }
   ]);
     res.json(all_playlists);
