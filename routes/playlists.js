@@ -12,11 +12,16 @@ router.get('/', async (req, res) => {
     const all_playlists = await Playlist.find({deleted:false}).sort({ lastPublishedAt: -1 }).exec();
     res.json(all_playlists);
   })
-// Get recent playlists
+// Get recently updated playlists
 router.get('/recent', async (req, res) => {
     const all_playlists = await Playlist.find({deleted:false}).sort({ lastPublishedAt: -1 }).limit(10).exec();
     res.json(all_playlists);
   })
+  // Get recently created playlists
+router.get('/new', async (req, res) => {
+  const all_playlists = await Playlist.find({deleted:false}).sort({ firstPublishedAt: -1 }).limit(10).exec();
+  res.json(all_playlists);
+})
   // Get popular playlists
  router.get('/popular', async (req, res) => {
     const all_playlists = await Playlist.find({deleted:false}).sort({ averageViews: -1 }).limit(10).exec();
@@ -38,7 +43,7 @@ router.get('/recent', async (req, res) => {
                       {
                           $subtract: [ new Date(), '$lastPublishedAt' ]
                       },
-                      86400000 // milliseconds in a day
+                      3600000 // milliseconds in an hr
                   ]
               },
               popularityScore: '$averageViews' // You can adjust this based on your scoring metric
@@ -88,7 +93,7 @@ router.post('/delete_or_restore_many', async (req, res) => {
 router.get('/delete',async (req, res) => {
     //await Playlist.findByIdAndUpdate(req.body.playlistId, { deleted: true });
     //await Playlist.deleteMany({deleted: false});
-    await Playlist.deleteMany({});   
+    //await Playlist.deleteMany({});   
     res.redirect('/')
 })
 
@@ -225,6 +230,7 @@ console.log(`${new Date().toISOString()} Updating playlists..`);
           thumbnail_maxres: getThumbnailUrl(item.snippet.thumbnails, 'maxres'),
           title: item.snippet.title,
           channelTitle: item.snippet.channelTitle,
+          firstPublishedAt: item.snippet.publishedAt,
           lastPublishedAt: lastPublishedAt,
           averageViews: averageViews, 
           deleted: false
