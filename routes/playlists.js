@@ -189,6 +189,9 @@ async function getLastPublishedAt(playlistId, playlist_publish_date) {
 }
 
 const fetchAndSavePlaylists = async () => {
+
+console.log(`${new Date().toISOString()} Updating playlists..`);
+
   try {
     const channels = await Channel.find().sort({ created_at: -1 }).exec();
     const allPlaylists = await Promise.all(channels.map(async (channel) => {
