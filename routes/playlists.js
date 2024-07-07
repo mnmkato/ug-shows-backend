@@ -255,6 +255,7 @@ console.log(`${new Date().toISOString()} Updating playlists..`);
       // Insert only the playlists that are not already in the database
       if (playlistsToInsert.length > 0) {
         await Playlist.insertMany(playlistsToInsert);
+        console.log(`${playlistsToInsert.length} playlists have been inserted`);
       }
     }));
 
